@@ -1,0 +1,36 @@
+# --- dependencies / build output ---
+node_modules/
+dist/
+dev-dist/
+*.local
+*.tsbuildinfo
+
+# --- secrets ---
+.env
+.env.*
+*.pem
+*.key
+credentials.json
+
+# --- editor / OS ---
+.DS_Store
+.idea
+.vscode
+npm-debug.log*
+
+# --- machine/sandbox tooling (not part of this project) ---
+.claude/
+.serena/
+.mcp.json
+.ripgreprc
+.gitconfig
+.gitmodules
+.bash_profile
+.bashrc
+.profile
+.zprofile
+.zshrc
+
+# --- source media ---
+# Original phone exports; regenerate public/clips/ with `npm run prepare:clips`.
+/Dance Moves/
