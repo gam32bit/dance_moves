@@ -48,8 +48,8 @@ gallery.
 
 **PWA / offline** — configured in `vite.config.ts` via `vite-plugin-pwa` (`generateSW`). The
 app shell is precached; `/clips/*.mp4` are deliberately excluded and instead runtime-cached
-(`CacheFirst`, cache name `clip-videos`). `src/offline.ts` writes to that same cache
-directly for the per-move "Available offline" toggle.
+(`CacheFirst`, cache name `clip-videos`), so a clip is available offline once it has been
+played.
 
 **Routing** — `HashRouter` with two routes: `/` (`Gallery`) and `/move/:id` (`MoveDetail`).
 Hash routing is intentional so the app works when opened from `file://` or a static host

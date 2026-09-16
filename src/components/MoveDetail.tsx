@@ -1,16 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { BASE_URL } from '../App';
+import { BASE_URL, clipUrl } from '../App';
 import { deleteMove, updateMove, useMove } from '../hooks/useMoves';
 import { addClip, useClips } from '../hooks/useClips';
 import { useDebouncedField } from '../hooks/useDebouncedField';
-import { cacheClip, clipUrl, isClipCached, uncacheClip } from '../offline';
 import { guard } from '../errors';
 import type { MoveStatus } from '../types';
 import StatusPicker from './StatusPicker';
 import ClipList from './ClipList';
 import ClipRecorder from './ClipRecorder';
 import Modal from './Modal';
+import PracticeTimer from './PracticeTimer';
 
 export default function MoveDetail() {
   const { id } = useParams();
@@ -19,8 +19,6 @@ export default function MoveDetail() {
   const navigate = useNavigate();
 
   const [adding, setAdding] = useState(false);
-  const [cached, setCached] = useState(false);
-  const [busy, setBusy] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const seedSrc = move?.seedClip ? clipUrl(BASE_URL, move.seedClip) : undefined;
@@ -32,10 +30,6 @@ export default function MoveDetail() {
     if (move) void guard('Save notes', () => updateMove(move.id, { notes: value }));
   });
 
-  useEffect(() => {
-    if (seedSrc) void guard('Check offline status', () => isClipCached(seedSrc).then(setCached));
-  }, [seedSrc]);
-
   // useMove distinguishes these: undefined while loading, null when missing.
   if (move === undefined) {
     return <div className="page"><p className="muted">Loading…</p></div>;
@@ -46,21 +40,6 @@ export default function MoveDetail() {
         <p className="muted">Move not found. <Link to="/">Back to gallery</Link></p>
       </div>
     );
-  }
-
-  async function toggleOffline() {
-    if (!seedSrc) return;
-    setBusy(true);
-    const ok = await guard('Update offline copy', async () => {
-      if (cached) {
-        await uncacheClip(seedSrc);
-        return false;
-      }
-      await cacheClip(seedSrc);
-      return true;
-    });
-    if (ok !== undefined) setCached(ok);
-    setBusy(false);
   }
 
   async function handleCapture(blob: Blob, source: 'recorded' | 'uploaded') {
@@ -114,12 +93,7 @@ export default function MoveDetail() {
         }
       />
 
-      {seedSrc && (
-        <label className="offline-toggle">
-          <input type="checkbox" checked={cached} disabled={busy} onChange={toggleOffline} />
-          Available offline
-        </label>
-      )}
+      <PracticeTimer />
 
       <label className="field">
         <span>Notes</span>

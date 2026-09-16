@@ -8,6 +8,10 @@ import ErrorToasts from './components/ErrorToasts';
 
 export const BASE_URL = import.meta.env.BASE_URL;
 
+export function clipUrl(baseUrl: string, seedClip: string): string {
+  return `${baseUrl}clips/${seedClip}`;
+}
+
 export default function App() {
   const [ready, setReady] = useState(false);
 

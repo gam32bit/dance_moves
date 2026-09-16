@@ -147,7 +147,6 @@ html, body {
   margin-bottom: 14px;
   max-height: 60vh;
 }
-.offline-toggle { display: flex; align-items: center; gap: 8px; margin: 12px 0; color: var(--muted); }
 
 .field { display: flex; flex-direction: column; gap: 6px; margin: 14px 0; }
 .field > span { font-size: 0.85rem; color: var(--muted); }
@@ -254,3 +253,13 @@ html, body {
 }
 
 .recorder-timer { text-align: center; margin: 6px 0 0; font-variant-numeric: tabular-nums; }
+
+.practice-timer { display: flex; align-items: center; gap: 12px; margin: 12px 0; }
+.timer-readout {
+  font-variant-numeric: tabular-nums;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--muted);
+  min-width: 3.2em;
+}
+.timer-running { color: var(--accent); }

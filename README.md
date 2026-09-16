@@ -3,7 +3,8 @@
 A local-first PWA for practising and tracking dance moves. Browse your clips in a
 gallery, watch them on loop, track each move's status (Not Started → In Progress →
 Ready), and attach new clips from each practice session. Ready moves sink to the
-bottom of the gallery.
+bottom of the gallery. Each move has a 5-minute practice timer that chimes when the
+time is up.
 
 All data lives in the browser (IndexedDB) on the device — no server, works offline
 once installed. Use **Settings → Export backup** regularly; import it to move to a new
@@ -34,7 +35,7 @@ For GitHub Pages under a subpath, build with `VITE_BASE=/dance_moves/ npm run bu
   the app creates one move per entry.
 - **Practice clips**: recorded in-app (`MediaRecorder`, capped at 90 seconds) or
   picked from a file, stored as `Blob`s in IndexedDB (`src/db.ts`).
-- **Offline video**: the app shell is precached; seed videos are cached on demand
-  (per-move "Available offline" toggle, or automatically on first play).
+- **Offline video**: the app shell is precached; seed videos are cached automatically
+  on first play.
 
 Camera recording requires a secure context — `localhost` or an HTTPS deployment.

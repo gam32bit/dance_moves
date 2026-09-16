@@ -42,3 +42,25 @@ failure didn't work because Dexie holds the connection open against
 to make failures self-reporting (ErrorBoundary + a `guard()` wrapper on every write),
 since the app previously discarded every error it produced. Next occurrence should
 name itself.
+
+## 2026-09-16 — Practice timer, and dropping the offline toggle
+
+`setTimeout` was rejected for the 5-minute chime: mobile throttles background timers,
+so the sound would land late or not at all. The chime is instead scheduled on the
+audio clock (`osc.start(ctx.currentTime + 300)`), which the audio thread drives
+independently of JS timers, with a wake lock to keep the page from being backgrounded
+in the first place. Because iOS suspends a hidden `AudioContext` — and a suspended
+context's scheduled events don't fire on time — there is also a tick/`visibilitychange`
+fallback that replays the chime on return. Timer state is deliberately component-local,
+not in Dexie: nothing asks for it to survive a reload.
+
+Verified with a patched `OscillatorNode.prototype.start` in the browser: context
+running after the tap, three beeps scheduled at the end timestamp, and the fallback
+firing exactly once after a forced `ctx.suspend()`. Still unverified: whether the chime
+is *audible* on the phone, and behaviour under a real screen lock (only `ctx.suspend()`
+was simulated). That is the thing to check first if it misbehaves.
+
+The per-move "Available offline" toggle is gone, but the Workbox `clip-videos`
+runtime cache stays — that rule is what makes clips play at all on repeat visits, and
+removing it would have broken offline playback rather than simplifying it. `clipUrl`
+moved from the deleted `src/offline.ts` to `App.tsx`; it was never offline-specific.
