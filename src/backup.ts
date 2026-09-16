@@ -27,28 +27,38 @@ function base64ToBlob(b64: string, mime: string): Blob {
 
 export async function exportBackup(): Promise<void> {
   const moves = await db.moves.toArray();
-  const clipRows = await db.clips.toArray();
-  const clips = await Promise.all(
-    clipRows.map(async ({ blob, ...rest }) => ({
-      ...rest,
-      blobBase64: await blobToBase64(blob),
-    })),
-  );
-  const file: BackupFile = {
-    format: 'dance-moves-backup',
-    version: 1,
-    exportedAt: new Date().toISOString(),
-    moves,
-    clips,
-  };
-  const url = URL.createObjectURL(
-    new Blob([JSON.stringify(file)], { type: 'application/json' }),
-  );
+  const ids = await db.clips.orderBy('recordedAt').primaryKeys();
+
+  // Assembled as Blob parts rather than one JSON.stringify of everything: a few
+  // hundred MB of video base64-encodes into a single string that exceeds the
+  // engine's max string length, so the old version failed on exactly the
+  // libraries big enough to be worth backing up.
+  const parts: BlobPart[] = [
+    `{"format":"dance-moves-backup","version":1,"exportedAt":${JSON.stringify(
+      new Date().toISOString(),
+    )},"moves":${JSON.stringify(moves)},"clips":[`,
+  ];
+
+  let first = true;
+  for (const id of ids) {
+    const clip = await db.clips.get(id as string);
+    if (!clip) continue;
+    const { blob, ...rest } = clip;
+    const entry = { ...rest, blobBase64: await blobToBase64(blob) };
+    parts.push((first ? '' : ',') + JSON.stringify(entry));
+    first = false;
+  }
+  parts.push(']}');
+
+  const url = URL.createObjectURL(new Blob(parts, { type: 'application/json' }));
   const a = document.createElement('a');
   a.href = url;
   a.download = `dance-moves-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(url);
+  a.remove();
+  // Revoking immediately can cancel the download before it starts.
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
 export async function importBackup(file: File): Promise<void> {

@@ -18,3 +18,27 @@ Decisions:
 
 Verified in-browser: gallery, seeding, video playback, status change + reorder. Camera
 recording and backup import not runtime-tested (need a real device / camera).
+
+## 2026-09-16 — silent failures, and the quota theory that wasn't
+
+Investigated a report that practice clips, then notes, then the whole app stopped
+working. The leading hypothesis was storage quota exhaustion, and it was wrong:
+loading six ~5 MB clips (matching the reported 15-second recordings) used 31.5 MB
+against a 2.15 GB quota — 1.5%. Rejected the follow-on suggestion of moving clips to
+a backend, since the confirmed bug is a controlled-input race that a network
+round-trip makes strictly slower, at the cost of the offline-first design. Also ruled
+out the Pages base path (the workflow does set `VITE_BASE`) and missing clips in the
+deploy (all 57 files are committed).
+
+The one confirmed root cause: notes and the move name wrote to IndexedDB on every
+keystroke while their `value` came back from a `useLiveQuery`, so each re-render
+clobbered anything typed since the last completed read. Measured 62 characters typed,
+1 saved; after the debounce/local-state fix, 62/62.
+
+Clip-saving via the camera and the original blank page are still unexplained. Neither
+was reproducible here — there is no camera in this environment, and forcing the read
+failure didn't work because Dexie holds the connection open against
+`deleteDatabase`. Rather than keep generating hypotheses, the deliberate choice was
+to make failures self-reporting (ErrorBoundary + a `guard()` wrapper on every write),
+since the app previously discarded every error it produced. Next occurrence should
+name itself.

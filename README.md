@@ -7,7 +7,8 @@ bottom of the gallery.
 
 All data lives in the browser (IndexedDB) on the device — no server, works offline
 once installed. Use **Settings → Export backup** regularly; import it to move to a new
-device.
+device. If a save ever fails (storage full, evicted data), the app says so on screen
+rather than failing quietly.
 
 ## Setup
 
@@ -31,8 +32,8 @@ For GitHub Pages under a subpath, build with `VITE_BASE=/dance_moves/ npm run bu
 - **Seed clips**: `scripts/prepare-clips.mjs` remuxes the raw phone exports to
   faststart MP4 + poster JPGs and writes `public/clips/index.json`. On first launch
   the app creates one move per entry.
-- **Practice clips**: recorded in-app (`MediaRecorder`) or picked from a file, stored
-  as `Blob`s in IndexedDB (`src/db.ts`).
+- **Practice clips**: recorded in-app (`MediaRecorder`, capped at 90 seconds) or
+  picked from a file, stored as `Blob`s in IndexedDB (`src/db.ts`).
 - **Offline video**: the app shell is precached; seed videos are cached on demand
   (per-move "Available offline" toggle, or automatically on first play).
 

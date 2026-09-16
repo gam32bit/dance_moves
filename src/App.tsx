@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { seedIfNeeded } from './seed';
+import { guard } from './errors';
 import Gallery from './components/Gallery';
 import MoveDetail from './components/MoveDetail';
+import ErrorToasts from './components/ErrorToasts';
 
 export const BASE_URL = import.meta.env.BASE_URL;
 
@@ -10,7 +12,12 @@ export default function App() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    seedIfNeeded(BASE_URL).finally(() => setReady(true));
+    // Ask the browser not to evict practice clips under storage pressure.
+    // Best-effort: it may be granted silently, prompted, or refused.
+    void navigator.storage?.persist?.().catch(() => {});
+    void guard('Set up library', () => seedIfNeeded(BASE_URL)).finally(() =>
+      setReady(true),
+    );
   }, []);
 
   if (!ready) {
@@ -18,9 +25,12 @@ export default function App() {
   }
 
   return (
-    <Routes>
-      <Route path="/" element={<Gallery />} />
-      <Route path="/move/:id" element={<MoveDetail />} />
-    </Routes>
+    <>
+      <Routes>
+        <Route path="/" element={<Gallery />} />
+        <Route path="/move/:id" element={<MoveDetail />} />
+      </Routes>
+      <ErrorToasts />
+    </>
   );
 }

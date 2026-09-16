@@ -14,8 +14,12 @@ export function useMoves(): Move[] | undefined {
   });
 }
 
-export function useMove(id: string | undefined): Move | undefined {
-  return useLiveQuery(() => (id ? db.moves.get(id) : undefined), [id]);
+/** `undefined` while loading, `null` when there is no such move. */
+export function useMove(id: string | undefined): Move | null | undefined {
+  return useLiveQuery(
+    async () => (id ? ((await db.moves.get(id)) ?? null) : null),
+    [id],
+  );
 }
 
 export async function updateMove(id: string, patch: Partial<Move>): Promise<void> {

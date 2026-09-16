@@ -1,10 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Clip } from '../types';
 import { deleteClip, updateClip, useBlobUrl } from '../hooks/useClips';
+import { guard } from '../errors';
 
 function ClipItem({ clip }: { clip: Clip }) {
   const url = useBlobUrl(clip.blob);
   const [note, setNote] = useState(clip.note);
+
+  // Adopt the stored note if it changes elsewhere (import, another tab).
+  useEffect(() => setNote(clip.note), [clip.note]);
   const date = new Date(clip.recordedAt).toLocaleString(undefined, {
     dateStyle: 'medium',
     timeStyle: 'short',
@@ -20,9 +24,15 @@ function ClipItem({ clip }: { clip: Clip }) {
           value={note}
           placeholder="Add a note…"
           onChange={(e) => setNote(e.target.value)}
-          onBlur={() => note !== clip.note && updateClip(clip.id, { note })}
+          onBlur={() =>
+            note !== clip.note &&
+            void guard('Save clip note', () => updateClip(clip.id, { note }))
+          }
         />
-        <button className="btn btn-ghost btn-sm" onClick={() => deleteClip(clip.id)}>
+        <button
+          className="btn btn-ghost btn-sm"
+          onClick={() => void guard('Delete clip', () => deleteClip(clip.id))}
+        >
           Delete
         </button>
       </div>

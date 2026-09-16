@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { useMoves } from '../hooks/useMoves';
@@ -11,12 +11,20 @@ export default function Gallery() {
   const [showNew, setShowNew] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
-  const allClips = useLiveQuery(() => db.clips.toArray(), []);
-  const counts = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const c of allClips ?? []) m.set(c.moveId, (m.get(c.moveId) ?? 0) + 1);
-    return m;
-  }, [allClips]);
+  // Walk the moveId index only. Loading full rows here pulled every practice
+  // video into memory on the gallery, on every write to the clips table.
+  const counts = useLiveQuery(
+    async () => {
+      const m = new Map<string, number>();
+      await db.clips.orderBy('moveId').eachKey((key) => {
+        const moveId = String(key);
+        m.set(moveId, (m.get(moveId) ?? 0) + 1);
+      });
+      return m;
+    },
+    [],
+    new Map<string, number>(),
+  );
 
   return (
     <div className="page">

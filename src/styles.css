@@ -210,3 +210,47 @@ html, body {
   .modal-backdrop { place-items: center; padding: 20px; }
   .modal { border-radius: var(--radius); }
 }
+
+/* --- error surfacing --- */
+.crash { max-width: 560px; }
+.crash h1 { font-size: 1.3rem; margin: 0 0 8px; }
+.crash-actions { display: flex; gap: 8px; margin: 16px 0; }
+.crash-details { margin-top: 12px; }
+.crash-details pre {
+  overflow-x: auto;
+  background: var(--surface);
+  padding: 10px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.toasts {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 50;
+  pointer-events: none;
+}
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.35);
+}
+.toast-body { display: flex; flex-direction: column; gap: 2px; flex: 1; font-size: 0.85rem; }
+.toast-body strong { color: var(--danger); }
+@media (min-width: 560px) {
+  .toasts { left: auto; right: 16px; bottom: 16px; max-width: 360px; }
+}
+
+.recorder-timer { text-align: center; margin: 6px 0 0; font-variant-numeric: tabular-nums; }

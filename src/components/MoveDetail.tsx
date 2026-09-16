@@ -3,7 +3,9 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { BASE_URL } from '../App';
 import { deleteMove, updateMove, useMove } from '../hooks/useMoves';
 import { addClip, useClips } from '../hooks/useClips';
+import { useDebouncedField } from '../hooks/useDebouncedField';
 import { cacheClip, clipUrl, isClipCached, uncacheClip } from '../offline';
+import { guard } from '../errors';
 import type { MoveStatus } from '../types';
 import StatusPicker from './StatusPicker';
 import ClipList from './ClipList';
@@ -19,35 +21,58 @@ export default function MoveDetail() {
   const [adding, setAdding] = useState(false);
   const [cached, setCached] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const seedSrc = move?.seedClip ? clipUrl(BASE_URL, move.seedClip) : undefined;
 
+  const name = useDebouncedField(move?.name, (value) => {
+    if (move) void guard('Save name', () => updateMove(move.id, { name: value }));
+  });
+  const notes = useDebouncedField(move?.notes, (value) => {
+    if (move) void guard('Save notes', () => updateMove(move.id, { notes: value }));
+  });
+
   useEffect(() => {
-    if (seedSrc) isClipCached(seedSrc).then(setCached);
+    if (seedSrc) void guard('Check offline status', () => isClipCached(seedSrc).then(setCached));
   }, [seedSrc]);
 
-  if (move === undefined) return <div className="page"><p className="muted">Loading…</p></div>;
-  if (move === null) return <div className="page"><p className="muted">Move not found. <Link to="/">Back</Link></p></div>;
+  // useMove distinguishes these: undefined while loading, null when missing.
+  if (move === undefined) {
+    return <div className="page"><p className="muted">Loading…</p></div>;
+  }
+  if (move === null) {
+    return (
+      <div className="page">
+        <p className="muted">Move not found. <Link to="/">Back to gallery</Link></p>
+      </div>
+    );
+  }
 
   async function toggleOffline() {
     if (!seedSrc) return;
     setBusy(true);
-    try {
+    const ok = await guard('Update offline copy', async () => {
       if (cached) {
         await uncacheClip(seedSrc);
-        setCached(false);
-      } else {
-        await cacheClip(seedSrc);
-        setCached(true);
+        return false;
       }
-    } finally {
-      setBusy(false);
-    }
+      await cacheClip(seedSrc);
+      return true;
+    });
+    if (ok !== undefined) setCached(ok);
+    setBusy(false);
   }
 
   async function handleCapture(blob: Blob, source: 'recorded' | 'uploaded') {
-    await addClip(move!.id, blob, source);
-    setAdding(false);
+    if (blob.size === 0) {
+      // A zero-length recording would save fine and then play as a broken video.
+      return;
+    }
+    setSaving(true);
+    const id = await guard('Save practice clip', () => addClip(move!.id, blob, source));
+    setSaving(false);
+    // Only dismiss the recorder if the clip actually made it to disk.
+    if (id !== undefined) setAdding(false);
   }
 
   return (
@@ -58,8 +83,8 @@ export default function MoveDetail() {
           className="btn btn-ghost"
           onClick={async () => {
             if (confirm(`Delete "${move.name}" and its clips?`)) {
-              await deleteMove(move.id);
-              navigate('/');
+              const ok = await guard('Delete move', () => deleteMove(move.id));
+              if (ok !== undefined) navigate('/');
             }
           }}
         >
@@ -69,8 +94,9 @@ export default function MoveDetail() {
 
       <input
         className="title-input"
-        value={move.name}
-        onChange={(e) => updateMove(move.id, { name: e.target.value })}
+        value={name.value}
+        onChange={(e) => name.onChange(e.target.value)}
+        onBlur={name.onBlur}
       />
 
       {seedSrc ? (
@@ -83,7 +109,9 @@ export default function MoveDetail() {
 
       <StatusPicker
         value={move.status}
-        onChange={(s: MoveStatus) => updateMove(move.id, { status: s })}
+        onChange={(s: MoveStatus) =>
+          void guard('Update status', () => updateMove(move.id, { status: s }))
+        }
       />
 
       {seedSrc && (
@@ -96,10 +124,11 @@ export default function MoveDetail() {
       <label className="field">
         <span>Notes</span>
         <textarea
-          value={move.notes}
+          value={notes.value}
           rows={3}
           placeholder="Cues, counts, things to fix…"
-          onChange={(e) => updateMove(move.id, { notes: e.target.value })}
+          onChange={(e) => notes.onChange(e.target.value)}
+          onBlur={notes.onBlur}
         />
       </label>
 
@@ -112,7 +141,7 @@ export default function MoveDetail() {
 
       {adding && (
         <Modal title="Add practice clip" onClose={() => setAdding(false)}>
-          <ClipRecorder onCapture={handleCapture} />
+          <ClipRecorder onCapture={handleCapture} saving={saving} />
         </Modal>
       )}
     </div>
