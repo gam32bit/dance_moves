@@ -64,3 +64,32 @@ The per-move "Available offline" toggle is gone, but the Workbox `clip-videos`
 runtime cache stays — that rule is what makes clips play at all on repeat visits, and
 removing it would have broken offline playback rather than simplifying it. `clipUrl`
 moved from the deleted `src/offline.ts` to `App.tsx`; it was never offline-specific.
+
+## 2026-09-22 — The clip-saving freeze names itself (partly)
+
+The failure the last entry left open finally produced evidence: "Saving…" stuck
+forever, then the gallery stuck on "Loading…". Both are one mechanism — a closed or
+blocked IndexedDB connection leaves Dexie operations *pending forever*, neither
+resolving nor rejecting. That defeats the `guard()` wrapper added last time, which
+only catches rejections, and it defeats `useLiveQuery`, which signals "loading" and
+"wedged" identically by staying `undefined`. The self-reporting built last session
+was structurally unable to see this class of failure.
+
+Auto-reopening on Dexie's `close` event was tried and then bounded to a single
+attempt: Dexie fires `close` when it closes the connection itself, so an
+unconditional reopen can cycle close → open → blocked → close on exactly the device
+already in trouble. It is also near-useless — reopening does not revive live queries
+that were pending when the connection died. The load-bearing fix is the 5s
+`useStalled` timeout that turns an eternal "Loading…" into a Reload button; the
+reopen is a courtesy.
+
+Root cause is *still* unknown: connection death (another tab, storage reclaim) versus
+a large blob write hitting quota trouble. Not distinguishable from source, and not
+reproducible here — no camera, and it needs a real phone under real storage pressure.
+So a failed save now appends `db open/closed, storage NMB used of NMB` to the toast.
+That string on the next occurrence is what settles it.
+
+Left unfixed deliberately: `ClipRecorder`'s camera effect stops all stream tracks on
+cleanup, so if that runs while `MediaRecorder` is flushing its last chunk, `onstop`
+can yield a *truncated* blob. The `size === 0` guard catches empty, not short. It is
+a separate bug from the freeze and was not what was reported.
