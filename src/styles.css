@@ -263,3 +263,5 @@ html, body {
   min-width: 3.2em;
 }
 .timer-running { color: var(--accent); }
+
+.stalled { display: grid; gap: 12px; justify-items: start; }

@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { useMoves } from '../hooks/useMoves';
+import { useStalled } from '../hooks/useStalled';
 import MoveCard from './MoveCard';
 import NewMoveDialog from './NewMoveDialog';
 import Settings from './Settings';
 
 export default function Gallery() {
   const moves = useMoves();
+  const stalled = useStalled(moves === undefined);
   const [showNew, setShowNew] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
@@ -36,7 +38,18 @@ export default function Gallery() {
         </div>
       </header>
 
-      {!moves && <p className="muted">Loading…</p>}
+      {!moves && !stalled && <p className="muted">Loading…</p>}
+      {!moves && stalled && (
+        <div className="stalled">
+          <p className="error">
+            Your moves are taking too long to load. The database may be blocked
+            by another copy of the app in a different tab.
+          </p>
+          <button className="btn btn-primary" onClick={() => location.reload()}>
+            Reload
+          </button>
+        </div>
+      )}
       {moves && moves.length === 0 && <p className="muted">No moves yet. Add one to get started.</p>}
 
       <div className="grid">

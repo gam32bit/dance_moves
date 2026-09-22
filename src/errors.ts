@@ -73,3 +73,35 @@ export function installGlobalErrorHandlers(): void {
     if (e.error) reportError('Unexpected error', e.error);
   });
 }
+
+/**
+ * Reject if `op` has not settled within `ms`.
+ *
+ * IndexedDB work can stay pending forever when the connection is closed or
+ * blocked — it neither resolves nor rejects — which leaves the UI stuck on a
+ * disabled "Saving…" button with no way out. A timeout turns that into an
+ * ordinary error that `guard` can surface.
+ */
+export function withTimeout<T>(ms: number, op: () => Promise<T>): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(
+      () =>
+        reject(
+          new Error(
+            'The database did not respond. It may be blocked by another tab — reload the app and try again.',
+          ),
+        ),
+      ms,
+    );
+    op().then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
+}

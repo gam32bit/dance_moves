@@ -4,13 +4,17 @@ import { BASE_URL, clipUrl } from '../App';
 import { deleteMove, updateMove, useMove } from '../hooks/useMoves';
 import { addClip, useClips } from '../hooks/useClips';
 import { useDebouncedField } from '../hooks/useDebouncedField';
-import { guard } from '../errors';
+import { useStalled } from '../hooks/useStalled';
+import { guard, withTimeout } from '../errors';
 import type { MoveStatus } from '../types';
 import StatusPicker from './StatusPicker';
 import ClipList from './ClipList';
 import ClipRecorder from './ClipRecorder';
 import Modal from './Modal';
 import PracticeTimer from './PracticeTimer';
+
+/** Long enough for a big clip on a slow phone, short enough to not feel hung. */
+const SAVE_TIMEOUT_MS = 30_000;
 
 export default function MoveDetail() {
   const { id } = useParams();
@@ -20,6 +24,7 @@ export default function MoveDetail() {
 
   const [adding, setAdding] = useState(false);
   const [saving, setSaving] = useState(false);
+  const stalled = useStalled(move === undefined);
 
   const seedSrc = move?.seedClip ? clipUrl(BASE_URL, move.seedClip) : undefined;
 
@@ -32,7 +37,23 @@ export default function MoveDetail() {
 
   // useMove distinguishes these: undefined while loading, null when missing.
   if (move === undefined) {
-    return <div className="page"><p className="muted">Loading…</p></div>;
+    return (
+      <div className="page">
+        {stalled ? (
+          <>
+            <p className="error">
+              This move is taking too long to load. The database may be blocked
+              by another copy of the app.
+            </p>
+            <button className="btn btn-primary" onClick={() => location.reload()}>
+              Reload
+            </button>
+          </>
+        ) : (
+          <p className="muted">Loading…</p>
+        )}
+      </div>
+    );
   }
   if (move === null) {
     return (
@@ -48,7 +69,11 @@ export default function MoveDetail() {
       return;
     }
     setSaving(true);
-    const id = await guard('Save practice clip', () => addClip(move!.id, blob, source));
+    // Bounded, so a wedged IndexedDB connection cannot leave this on "Saving…"
+    // forever with the button disabled and no error.
+    const id = await guard('Save practice clip', () =>
+      withTimeout(SAVE_TIMEOUT_MS, () => addClip(move!.id, blob, source)),
+    );
     setSaving(false);
     // Only dismiss the recorder if the clip actually made it to disk.
     if (id !== undefined) setAdding(false);
