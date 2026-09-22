@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { BASE_URL, clipUrl } from '../App';
+import { storageDiagnostics } from '../db';
 import { deleteMove, updateMove, useMove } from '../hooks/useMoves';
 import { addClip, useClips } from '../hooks/useClips';
 import { useDebouncedField } from '../hooks/useDebouncedField';
 import { useStalled } from '../hooks/useStalled';
-import { guard, withTimeout } from '../errors';
+import { describeError, guard, reportError, withTimeout } from '../errors';
 import type { MoveStatus } from '../types';
 import StatusPicker from './StatusPicker';
 import ClipList from './ClipList';
@@ -69,14 +70,21 @@ export default function MoveDetail() {
       return;
     }
     setSaving(true);
-    // Bounded, so a wedged IndexedDB connection cannot leave this on "Saving…"
-    // forever with the button disabled and no error.
-    const id = await guard('Save practice clip', () =>
-      withTimeout(SAVE_TIMEOUT_MS, () => addClip(move!.id, blob, source)),
-    );
-    setSaving(false);
-    // Only dismiss the recorder if the clip actually made it to disk.
-    if (id !== undefined) setAdding(false);
+    try {
+      // Bounded, so a wedged IndexedDB connection cannot leave this on
+      // "Saving…" forever with the button disabled and no error.
+      await withTimeout(SAVE_TIMEOUT_MS, () => addClip(move!.id, blob, source));
+      // Only dismiss the recorder if the clip actually made it to disk.
+      setAdding(false);
+    } catch (err) {
+      const why = await storageDiagnostics();
+      reportError(
+        'Save practice clip',
+        new Error(`${describeError(err)} (${why})`),
+      );
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (

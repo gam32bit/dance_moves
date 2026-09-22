@@ -88,7 +88,8 @@ export function withTimeout<T>(ms: number, op: () => Promise<T>): Promise<T> {
       () =>
         reject(
           new Error(
-            'The database did not respond. It may be blocked by another tab — reload the app and try again.',
+            'The database did not respond in time. It may still finish in the ' +
+              'background — reload the app to see whether it saved.',
           ),
         ),
       ms,
