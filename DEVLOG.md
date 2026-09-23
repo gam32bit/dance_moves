@@ -93,3 +93,31 @@ Left unfixed deliberately: `ClipRecorder`'s camera effect stops all stream track
 cleanup, so if that runs while `MediaRecorder` is flushing its last chunk, `onstop`
 can yield a *truncated* blob. The `size === 0` guard catches empty, not short. It is
 a separate bug from the freeze and was not what was reported.
+
+## 2026-09-23 — Battle round mode
+
+The first design sketched for this was a cueing engine — timed callouts pushing one
+Ready move at a time, with landed/skipped tracked per round into a new Dexie table.
+Joe cut all of it: what he wants is the existing gallery, a timer, and tapping off the
+thumbnails of moves he actually hit. So there is no `rounds` table, no schema version
+bump, and no change to the backup format. Session state is plain React state.
+
+That choice has a consequence worth naming: the session dies on navigating back to
+the gallery, not just on reload. It falls out of "reset on reload" and was accepted
+knowingly; if it turns out to be annoying in practice, the fix is a module-level Set
+rather than `useState`.
+
+The timer logic moved out of `PracticeTimer` into `useCountdown` instead of being
+copied. That code is subtler than it looks — audio has to be unlocked inside the tap
+gesture, a chime pre-scheduled on a context that got suspended never sounded and has
+to be replayed on the next tick, and the readout recomputes from an end timestamp
+because background throttling skips intervals. A second hand-maintained copy would
+have drifted.
+
+A "Done (n)" strip that taps to restore was added unprompted: tapping happens
+mid-freestyle on a phone, and without it a fat-fingered tap costs the whole session.
+
+Untested beyond `tsc --noEmit` and a clean build. The countdown, the chime, and
+whether the 5-minute timer still behaves identically after the extraction all need a
+real phone — this profile has no Ready moves, and `HashRouter` means a curl against
+`/` never exercises `/battle` at all.

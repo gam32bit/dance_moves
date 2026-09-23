@@ -4,6 +4,7 @@ import { seedIfNeeded } from './seed';
 import { guard } from './errors';
 import Gallery from './components/Gallery';
 import MoveDetail from './components/MoveDetail';
+import BattleRound from './components/BattleRound';
 import ErrorToasts from './components/ErrorToasts';
 
 export const BASE_URL = import.meta.env.BASE_URL;
@@ -33,6 +34,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Gallery />} />
         <Route path="/move/:id" element={<MoveDetail />} />
+        <Route path="/battle" element={<BattleRound />} />
       </Routes>
       <ErrorToasts />
     </>

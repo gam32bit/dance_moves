@@ -265,3 +265,38 @@ html, body {
 .timer-running { color: var(--accent); }
 
 .stalled { display: grid; gap: 12px; justify-items: start; }
+
+/* battle round */
+.battle-timer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin: 8px 0 20px;
+}
+.round-readout {
+  font-variant-numeric: tabular-nums;
+  font-size: 2.6rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--muted);
+}
+/* A tile is a <button>, so the browser's control styling has to be undone to
+   match the <Link> cards in the gallery. */
+.battle-tile {
+  font: inherit;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  /* UA stylesheets set align-items on <button>; without this the thumb and body
+     shrink-to-fit instead of filling the tile. */
+  align-items: stretch;
+  width: 100%;
+}
+.battle-tile:active { border-color: var(--accent); }
+.battle-tile-done { opacity: 0.4; }
+.grid-done { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }

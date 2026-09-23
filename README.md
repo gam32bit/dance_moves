@@ -6,6 +6,13 @@ Ready), and attach new clips from each practice session. Ready moves sink to the
 bottom of the gallery. Each move has a 5-minute practice timer that chimes when the
 time is up.
 
+**Battle round** mode is a second screen for freestyle practice: a 3-minute round
+timer plus a grid of the moves you've marked Ready. Tap a move's thumbnail once
+you've worked it into the freestyle and it drops out of the grid, staying out across
+subsequent rounds so the session pushes you toward the ones you keep avoiding. "New
+session" brings them all back. Nothing about a session is saved — a reload starts
+fresh.
+
 All data lives in the browser (IndexedDB) on the device — no server, works offline
 once installed. Use **Settings → Export backup** regularly; import it to move to a new
 device. If a save ever fails (storage full, evicted data), the app says so on screen
