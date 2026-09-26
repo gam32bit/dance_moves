@@ -3,7 +3,15 @@ import type { Clip } from '../types';
 import { deleteClip, updateClip, useBlobUrl } from '../hooks/useClips';
 import { guard } from '../errors';
 
-function ClipItem({ clip }: { clip: Clip }) {
+function ClipItem({
+  clip,
+  isMain,
+  onUseAsMain,
+}: {
+  clip: Clip;
+  isMain: boolean;
+  onUseAsMain: () => void;
+}) {
   const url = useBlobUrl(clip.blob);
   const [note, setNote] = useState(clip.note);
 
@@ -29,23 +37,45 @@ function ClipItem({ clip }: { clip: Clip }) {
             void guard('Save clip note', () => updateClip(clip.id, { note }))
           }
         />
-        <button
-          className="btn btn-ghost btn-sm"
-          onClick={() => void guard('Delete clip', () => deleteClip(clip.id))}
-        >
-          Delete
-        </button>
+        <div className="clip-actions">
+          {isMain ? (
+            <span className="muted">Main clip</span>
+          ) : (
+            <button className="btn btn-ghost btn-sm" onClick={onUseAsMain}>
+              Use as main
+            </button>
+          )}
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={() => void guard('Delete clip', () => deleteClip(clip.id))}
+          >
+            Delete
+          </button>
+        </div>
       </div>
     </li>
   );
 }
 
-export default function ClipList({ clips }: { clips: Clip[] }) {
+export default function ClipList({
+  clips,
+  mainClipId,
+  onUseAsMain,
+}: {
+  clips: Clip[];
+  mainClipId: string | undefined;
+  onUseAsMain: (clipId: string) => void;
+}) {
   if (clips.length === 0) return <p className="muted">No practice clips saved yet.</p>;
   return (
     <ul className="clip-list">
       {clips.map((c) => (
-        <ClipItem key={c.id} clip={c} />
+        <ClipItem
+          key={c.id}
+          clip={c}
+          isMain={c.id === mainClipId}
+          onUseAsMain={() => onUseAsMain(c.id)}
+        />
       ))}
     </ul>
   );

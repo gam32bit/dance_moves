@@ -121,3 +121,22 @@ Untested beyond `tsc --noEmit` and a clean build. The countdown, the chime, and
 whether the 5-minute timer still behaves identically after the extraction all need a
 real phone — this profile has no Ready moves, and `HashRouter` means a curl against
 `/` never exercises `/battle` at all.
+
+## 2026-09-26 — Main clip swap, in-app thumbnails, swipe between moves
+
+The captured still lives in a new `still` field (a JPEG data URL, ~480px wide), not
+`poster`: `seed.ts` rewrites `poster` for seed moves from the index on every launch, and
+a `Blob` on the move row would have exported as `{}` because `backup.ts` stringifies
+moves directly. `mainClipId` leaves `seedClip` intact so the original is always
+restorable, and a deleted main clip just stops matching rather than being cleaned up.
+
+`MoveDetail` is now keyed by id under a small route wrapper. Without that, a debounced
+name/notes edit pending at swipe time would have been committed to the *next* move.
+Swipes starting on a video are ignored only in the bottom 56px (the scrub bar) — the
+first cut ignored the whole element, which on a phone is most of the visible screen.
+
+Unverified: frame capture itself. The automation Chrome tab stays `hidden` and never
+loads any `<video>`, so only the error path ("no frame loaded yet") and everything
+downstream of a stored still were exercised. Swipe feel and iOS canvas capture need
+the phone. Known and accepted: marking a move Ready sinks it, so the next swipe from it
+goes into the Ready group rather than to its old neighbour.

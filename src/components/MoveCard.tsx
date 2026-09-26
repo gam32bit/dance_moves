@@ -1,10 +1,10 @@
 import { Link } from 'react-router-dom';
-import { BASE_URL } from '../App';
+import { posterUrl } from '../App';
 import type { Move } from '../types';
 import StatusBadge from './StatusBadge';
 
 export default function MoveCard({ move, clipCount }: { move: Move; clipCount: number }) {
-  const poster = move.poster ? `${BASE_URL}clips/${move.poster}` : undefined;
+  const poster = posterUrl(move);
   return (
     <Link to={`/move/${move.id}`} className={`card ${move.status === 'ready' ? 'card-ready' : ''}`}>
       <div className="card-thumb" style={poster ? { backgroundImage: `url(${poster})` } : undefined}>

@@ -16,6 +16,14 @@ export interface Move {
   /** Filename in /clips for a bundled seed clip, or null for a user-created move. */
   seedClip: string | null;
   poster: string | null;
+  /** Practice clip shown in place of the seed clip; falls back to it when unset or deleted. */
+  mainClipId?: string | null;
+  /**
+   * Frame captured in-app, as a JPEG data URL. Kept apart from `poster`, which
+   * seed.ts rewrites from the clip index on every launch, and a string rather
+   * than a Blob so it survives the JSON backup.
+   */
+  still?: string | null;
   createdAt: number;
   sortIndex: number;
 }

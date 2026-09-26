@@ -1,17 +1,12 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BASE_URL } from '../App';
+import { posterUrl } from '../App';
 import { useMoves } from '../hooks/useMoves';
 import { useStalled } from '../hooks/useStalled';
 import { formatCountdown, useCountdown } from '../hooks/useCountdown';
 import type { Move } from '../types';
 
 const ROUND_MS = 3 * 60 * 1000;
-
-function posterUrl(move: Move): string | undefined {
-  // Every /clips/... URL needs the base prefix so subpath deploys work.
-  return move.poster ? `${BASE_URL}clips/${move.poster}` : undefined;
-}
 
 function MoveTile({
   move,

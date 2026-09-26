@@ -44,7 +44,11 @@ export async function deleteClip(id: string): Promise<void> {
 export function useBlobUrl(blob: Blob | undefined): string | undefined {
   const [url, setUrl] = useState<string>();
   useEffect(() => {
-    if (!blob) return;
+    if (!blob) {
+      // Drop the old URL too; its blob's cleanup below has already revoked it.
+      setUrl(undefined);
+      return;
+    }
     const u = URL.createObjectURL(blob);
     setUrl(u);
     return () => URL.revokeObjectURL(u);

@@ -4,7 +4,13 @@ A local-first PWA for practising and tracking dance moves. Browse your clips in 
 gallery, watch them on loop, track each move's status (Not Started → In Progress →
 Ready), and attach new clips from each practice session. Ready moves sink to the
 bottom of the gallery. Each move has a 5-minute practice timer that chimes when the
-time is up.
+time is up. Swipe left/right on a move to step to the next/previous one in gallery
+order.
+
+Any practice clip can replace a move's main video (**Use as main**; **Restore
+original** switches back). Pause the main video on a frame and tap **Set as
+thumbnail** to make it that move's gallery image — stored on the device, so it
+survives backup/import but doesn't touch the committed `stills/`.
 
 **Battle round** mode is a second screen for freestyle practice: a 3-minute round
 timer plus a grid of the moves you've marked Ready. Tap a move's thumbnail once

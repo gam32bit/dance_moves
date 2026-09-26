@@ -6,11 +6,18 @@ import Gallery from './components/Gallery';
 import MoveDetail from './components/MoveDetail';
 import BattleRound from './components/BattleRound';
 import ErrorToasts from './components/ErrorToasts';
+import type { Move } from './types';
 
 export const BASE_URL = import.meta.env.BASE_URL;
 
 export function clipUrl(baseUrl: string, seedClip: string): string {
   return `${baseUrl}clips/${seedClip}`;
+}
+
+/** Thumbnail for a move: a still captured in-app wins over the bundled poster. */
+export function posterUrl(move: Move): string | undefined {
+  if (move.still) return move.still;
+  return move.poster ? `${BASE_URL}clips/${move.poster}` : undefined;
 }
 
 export default function App() {
