@@ -57,6 +57,11 @@ export default function BattleRound() {
     <div className="page">
       <header className="topbar">
         <Link to="/" className="btn btn-ghost">‹ Gallery</Link>
+        {ready.length > 0 && (
+          <span className="battle-left">
+            {remainingMoves.length} of {ready.length} left
+          </span>
+        )}
         {hitIds.length > 0 && (
           <button className="btn btn-ghost" onClick={newSession}>
             New session
