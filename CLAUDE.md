@@ -33,7 +33,10 @@ hook modules (`updateMove`, `createMove`, `addClip`, …).
 fetches `public/clips/index.json` and creates one `moves` row per bundled clip. That index
 plus the `.mp4`/`.jpg` files are build artifacts produced by `scripts/prepare-clips.mjs`,
 which remuxes/transcodes the raw phone exports in `Dance Moves/` (gitignored) to
-web-friendly H.264 + poster frames.
+web-friendly H.264 + poster frames. A hand-picked still at `stills/Move_NN.png` (committed)
+replaces the auto-extracted frame, written as `<clip>-still.jpg` — a new filename, because
+posters are runtime-cached `CacheFirst`. Posters are stored on the move row, so `seed.ts`
+re-syncs seed moves' `poster` from the index on every launch.
 
 **Gallery ordering** — `useMoves()` is the single source of sort order: `ready` moves sink
 below everything else, then by `sortIndex`. Changing a move's status is what reorders the

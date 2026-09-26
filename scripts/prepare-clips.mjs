@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Converts the raw phone clips in "Dance Moves/" into web-friendly assets in
 // public/clips/ and writes an index.json the app seeds itself from.
+// A hand-picked still at stills/Move_NN.png replaces the auto-extracted poster.
 //
 // Usage: node scripts/prepare-clips.mjs
 // Requires: ffmpeg + ffprobe on PATH.
@@ -15,6 +16,7 @@ const run = promisify(execFile);
 
 const SRC_DIR = path.resolve('Dance Moves');
 const OUT_DIR = path.resolve('public/clips');
+const STILLS_DIR = path.resolve('stills');
 
 const VIDEO_RE = /\.(mov|mp4|m4v)$/i;
 
@@ -49,6 +51,10 @@ async function poster(src, dest) {
     '-vf', 'scale=640:-2', dest]);
 }
 
+async function stillToJpg(src, dest) {
+  await run('ffmpeg', ['-y', '-i', src, '-q:v', '3', dest]);
+}
+
 async function main() {
   if (!existsSync(SRC_DIR)) {
     console.error(`Source folder not found: ${SRC_DIR}`);
@@ -62,12 +68,17 @@ async function main() {
   for (const [i, name] of files.entries()) {
     const base = name.replace(VIDEO_RE, '');
     const src = path.join(SRC_DIR, name);
+    const num = String(i + 1).padStart(2, '0');
+    const still = path.join(STILLS_DIR, `Move_${num}.png`);
     const mp4 = `${base}.mp4`;
-    const jpg = `${base}.jpg`;
+    // Stills get their own filename so devices that cached the old poster
+    // (CacheFirst) fetch the new one.
+    const jpg = existsSync(still) ? `${base}-still.jpg` : `${base}.jpg`;
     process.stdout.write(`[${i + 1}/${files.length}] ${name} -> ${mp4} … `);
     await toMp4(src, path.join(OUT_DIR, mp4));
     try {
-      await poster(src, path.join(OUT_DIR, jpg));
+      if (existsSync(still)) await stillToJpg(still, path.join(OUT_DIR, jpg));
+      else await poster(src, path.join(OUT_DIR, jpg));
     } catch {
       console.warn('(poster failed)');
     }
@@ -75,7 +86,7 @@ async function main() {
       clip: mp4,
       poster: existsSync(path.join(OUT_DIR, jpg)) ? jpg : null,
       originalName: name,
-      defaultName: `Move ${String(i + 1).padStart(2, '0')}`,
+      defaultName: `Move ${num}`,
     });
     console.log('done');
   }
