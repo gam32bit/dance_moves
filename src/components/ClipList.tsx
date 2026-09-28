@@ -24,7 +24,7 @@ function ClipItem({
 
   return (
     <li className="clip">
-      {url && <video src={url} controls loop playsInline className="clip-video" />}
+      {url && <video src={url} controls playsInline className="clip-video" />}
       <div className="clip-meta">
         <span className="muted">{date} · {clip.source}</span>
         <input

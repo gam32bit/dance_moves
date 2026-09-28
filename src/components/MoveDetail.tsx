@@ -212,7 +212,6 @@ function MoveDetail({ id, moves }: { id: string | undefined; moves: Move[] | und
             key={heroSrc}
             src={heroSrc}
             controls
-            loop
             playsInline
             poster={heroPoster}
             className="hero-video"

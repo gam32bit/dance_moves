@@ -22,6 +22,7 @@ export default function ClipRecorder({
   const videoRef = useRef<HTMLVideoElement>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
+  const discardRef = useRef(false);
 
   useEffect(() => {
     if (tab !== 'record') return;
@@ -61,6 +62,7 @@ export default function ClipRecorder({
   function start() {
     if (!stream) return;
     chunksRef.current = [];
+    discardRef.current = false;
     setElapsed(0);
     const mime = MediaRecorder.isTypeSupported('video/mp4')
       ? 'video/mp4'
@@ -69,6 +71,7 @@ export default function ClipRecorder({
     rec.ondataavailable = (e) => e.data.size && chunksRef.current.push(e.data);
     rec.onerror = () => setError('Recording failed. Try again.');
     rec.onstop = () => {
+      if (discardRef.current) return;
       const blob = new Blob(chunksRef.current, { type: mime });
       if (blob.size === 0) {
         setError('Nothing was recorded. Try again.');
@@ -85,6 +88,11 @@ export default function ClipRecorder({
   function stop() {
     if (recorderRef.current?.state === 'recording') recorderRef.current.stop();
     setRecording(false);
+  }
+
+  function discard() {
+    discardRef.current = true;
+    stop();
   }
 
   const remaining = MAX_SECONDS - elapsed;
@@ -114,9 +122,14 @@ export default function ClipRecorder({
               {saving ? 'Saving…' : '● Start recording'}
             </button>
           ) : (
-            <button className="btn btn-danger" onClick={stop}>
-              ■ Stop &amp; save
-            </button>
+            <div className="recorder-actions">
+              <button className="btn btn-danger" onClick={stop}>
+                ■ Stop &amp; save
+              </button>
+              <button className="btn btn-ghost" onClick={discard}>
+                Discard
+              </button>
+            </div>
           )}
         </div>
       )}

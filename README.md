@@ -1,7 +1,7 @@
 # Dance Moves
 
 A local-first PWA for practising and tracking dance moves. Browse your clips in a
-gallery, watch them on loop, track each move's status (Not Started → In Progress →
+gallery, watch them, track each move's status (Not Started → In Progress →
 Ready), and attach new clips from each practice session. Ready moves sink to the
 bottom of the gallery. Each move has a 5-minute practice timer that chimes when the
 time is up. Swipe left/right on a move to step to the next/previous one in gallery

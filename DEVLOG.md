@@ -140,3 +140,7 @@ loads any `<video>`, so only the error path ("no frame loaded yet") and everythi
 downstream of a stored still were exercised. Swipe feel and iOS canvas capture need
 the phone. Known and accepted: marking a move Ready sinks it, so the next swipe from it
 goes into the Ready group rather than to its old neighbour.
+
+## 2026-09-28 — Play-once clips, discard while recording
+
+Discard is only offered mid-recording; "Stop & save" still saves immediately. A review-then-save/discard step after stopping was considered and left out to keep the flow minimal — revisit if accidental saves become a nuisance.
