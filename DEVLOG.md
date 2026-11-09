@@ -144,3 +144,32 @@ goes into the Ready group rather than to its old neighbour.
 ## 2026-09-28 — Play-once clips, discard while recording
 
 Discard is only offered mid-recording; "Stop & save" still saves immediately. A review-then-save/discard step after stopping was considered and left out to keep the flow minimal — revisit if accidental saves become a nuisance.
+
+## 2026-11-09 — Sessions mode, 14 new clips, frame-picker thumbnails
+
+**New clips.** 14 Pixel exports (13 HEVC) added as Move 29–42. `prepare-clips.mjs` now
+skips outputs that already exist (re-running it used to rewrite all 208MB) and caps
+re-encodes at 1280px on the long side: +36MB total. `seed.ts` used to seed only an empty
+database, so the phone would never have seen them; it now adds any index clip the device
+hasn't been offered (`meta.seededClips`), with the first release's 28 clips hard-coded as
+already offered so a deleted seed move doesn't come back. Verified against a simulated
+v1 phone DB (27 seed moves, one deleted, one user move): exactly 14 added, deleted one
+stays gone, sorted after the existing moves, no change on reload.
+
+**Sessions.** Record (camera, 30-min cap, wake lock held) or upload a long freestyle,
+mark start/end on the player, cut. No in-browser way to slice MP4/WebM short of shipping
+ffmpeg.wasm (offline app, 4MB precache cap), so the cut is a real-time replay through
+`captureStream()` + `MediaRecorder`: a 5–30s move costs that many seconds. Sessions purge
+7 days after recording. Left out on purpose: markers while recording, notes, history.
+
+**Thumbnails.** "Set as thumbnail" (play, pause, tap) replaced by "Choose thumbnail": a
+slider + frame-step picker, shared with the cut flow.
+
+**Bug found on the way:** `guard()` returns `undefined` both on failure and on success of a
+void op, so "Delete move" never navigated back and "Thumbnail saved ✓" never showed. Call
+sites now resolve to `true`.
+
+Verified in desktop Chrome (this time the automation tab did decode video): picker sets a
+still; cut of a 3.5s range → 3.54s MP4 → new move with main clip + still. Unverified on the
+phone: long camera recording (memory, wake lock), cutting on Android Chrome, and whether
+`ensureDuration` makes a long WebM session scrubbable.

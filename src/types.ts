@@ -44,3 +44,15 @@ export interface ClipIndexEntry {
   originalName: string;
   defaultName: string;
 }
+
+/**
+ * A long freestyle recording that moves get cut out of. Deliberately
+ * temporary: purged after a week, and left out of the JSON backup.
+ */
+export interface Session {
+  id: string;
+  blob: Blob;
+  mime: string;
+  recordedAt: number;
+  source: 'recorded' | 'uploaded';
+}

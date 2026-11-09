@@ -13,6 +13,7 @@ import ClipList from './ClipList';
 import ClipRecorder from './ClipRecorder';
 import Modal from './Modal';
 import PracticeTimer from './PracticeTimer';
+import StillPicker from './StillPicker';
 
 /** Long enough for a big clip on a slow phone, short enough to not feel hung. */
 const SAVE_TIMEOUT_MS = 30_000;
@@ -22,9 +23,6 @@ const SWIPE_MIN_PX = 60;
 
 /** Height of the native video controls strip, where a drag means scrubbing. */
 const VIDEO_CONTROLS_PX = 56;
-
-/** Captured stills are gallery thumbnails; this keeps each one to tens of KB. */
-const STILL_MAX_WIDTH = 480;
 
 /**
  * Swiping swaps the `:id` param under the same route element. Keying the page
@@ -37,20 +35,6 @@ export default function MoveDetailRoute() {
   return <MoveDetail key={id} id={id} moves={moves} />;
 }
 
-/** Grab the video's current frame as a downscaled JPEG data URL. */
-function captureFrame(video: HTMLVideoElement): string {
-  if (video.readyState < 2 || !video.videoWidth) {
-    throw new Error('The video has no frame loaded yet. Play it, then pause on the frame you want.');
-  }
-  const width = Math.min(STILL_MAX_WIDTH, video.videoWidth);
-  const height = Math.round((video.videoHeight * width) / video.videoWidth);
-  const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
-  canvas.getContext('2d')!.drawImage(video, 0, 0, width, height);
-  return canvas.toDataURL('image/jpeg', 0.8);
-}
-
 function MoveDetail({ id, moves }: { id: string | undefined; moves: Move[] | undefined }) {
   const live = useMove(id);
   // The gallery list is already loaded, so a swiped-to move renders at once
@@ -61,7 +45,8 @@ function MoveDetail({ id, moves }: { id: string | undefined; moves: Move[] | und
 
   const [adding, setAdding] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [stillSaved, setStillSaved] = useState(false);
+  /** Where the picker opens: the frame the main video is paused on. */
+  const [pickingFrom, setPickingFrom] = useState<number | null>(null);
   const stalled = useStalled(move === undefined);
   const videoRef = useRef<HTMLVideoElement>(null);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
@@ -69,12 +54,6 @@ function MoveDetail({ id, moves }: { id: string | undefined; moves: Move[] | und
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
-
-  useEffect(() => {
-    if (!stillSaved) return;
-    const t = setTimeout(() => setStillSaved(false), 2000);
-    return () => clearTimeout(t);
-  }, [stillSaved]);
 
   const seedSrc = move?.seedClip ? clipUrl(BASE_URL, move.seedClip) : undefined;
   // A deleted main clip simply stops matching, falling back to the seed clip.
@@ -171,11 +150,11 @@ function MoveDetail({ id, moves }: { id: string | undefined; moves: Move[] | und
     }
   }
 
-  async function handleSetStill() {
+  async function handleSetStill(still: string) {
     const ok = await guard('Set thumbnail', () =>
-      updateMove(move!.id, { still: captureFrame(videoRef.current!) }),
+      updateMove(move!.id, { still }).then(() => true),
     );
-    if (ok !== undefined) setStillSaved(true);
+    if (ok !== undefined) setPickingFrom(null);
   }
 
   return (
@@ -189,7 +168,9 @@ function MoveDetail({ id, moves }: { id: string | undefined; moves: Move[] | und
           className="btn btn-ghost"
           onClick={async () => {
             if (confirm(`Delete "${move.name}" and its clips?`)) {
-              const ok = await guard('Delete move', () => deleteMove(move.id));
+              const ok = await guard('Delete move', () =>
+                deleteMove(move.id).then(() => true),
+              );
               if (ok !== undefined) navigate('/');
             }
           }}
@@ -217,8 +198,14 @@ function MoveDetail({ id, moves }: { id: string | undefined; moves: Move[] | und
             className="hero-video"
           />
           <div className="hero-actions">
-            <button className="btn btn-ghost btn-sm" onClick={() => void handleSetStill()}>
-              {stillSaved ? 'Thumbnail saved ✓' : 'Set as thumbnail'}
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => {
+                videoRef.current?.pause();
+                setPickingFrom(videoRef.current?.currentTime ?? 0);
+              }}
+            >
+              Choose thumbnail
             </button>
             {move.still && (
               <button
@@ -285,6 +272,12 @@ function MoveDetail({ id, moves }: { id: string | undefined; moves: Move[] | und
             void guard('Use as main clip', () => updateMove(move.id, { mainClipId: clipId }))
           }
         />
+      )}
+
+      {pickingFrom !== null && heroSrc && (
+        <Modal title="Choose thumbnail" onClose={() => setPickingFrom(null)}>
+          <StillPicker src={heroSrc} initialTime={pickingFrom} onPick={handleSetStill} />
+        </Modal>
       )}
 
       {adding && (

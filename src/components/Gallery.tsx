@@ -35,6 +35,7 @@ export default function Gallery() {
         <h1>Dance Moves</h1>
         <div className="topbar-actions">
           <Link to="/battle" className="btn btn-primary">Battle round</Link>
+          <Link to="/sessions" className="btn">Sessions</Link>
           <button className="btn" onClick={() => setShowNew(true)}>+ New move</button>
           <button className="btn btn-ghost" onClick={() => setShowSettings(true)} aria-label="Settings">⚙</button>
         </div>

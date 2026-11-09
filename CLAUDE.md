@@ -22,15 +22,21 @@ sandbox disabled.
 Local-first PWA (React 18 + Vite + TypeScript). No backend, no network calls at runtime.
 All persistent state is per-device.
 
-**Data layer** — `src/db.ts` defines a Dexie (IndexedDB) database `dance-moves` with three
-tables: `moves`, `clips` (practice videos stored as `Blob`s), and `meta` (key/value).
+**Data layer** — `src/db.ts` defines a Dexie (IndexedDB) database `dance-moves` with four
+tables: `moves`, `clips` (practice videos stored as `Blob`s), `sessions` (long freestyle
+recordings, schema v2), and `meta` (key/value).
 Components never touch Dexie directly for reads; they use the hooks in `src/hooks/`
 (`useMoves`, `useMove`, `useClips`) which wrap `dexie-react-hooks` `useLiveQuery`, so the UI
 re-renders automatically on any write. Mutations are exported functions from those same
 hook modules (`updateMove`, `createMove`, `addClip`, …).
 
-**Seeding** — `src/seed.ts` runs once on app mount (guarded by `meta.seededVersion`). It
-fetches `public/clips/index.json` and creates one `moves` row per bundled clip. That index
+**Seeding** — `src/seed.ts` runs on every app mount. It fetches `public/clips/index.json`
+and creates a `moves` row for each bundled clip this device hasn't been offered yet
+(tracked in `meta.seededClips`; devices from the first release, `seededVersion` 1, are
+treated as already offered the `FIRST_BATCH` list), so a deleted seed move never comes
+back and clips added later reach existing phones. To add clips: drop the phone exports in
+`Dance Moves/` and run `prepare:clips` — existing outputs are skipped, and new filenames
+must sort after the old ones (numbering is by sorted position). `index.json`
 plus the `.mp4`/`.jpg` files are build artifacts produced by `scripts/prepare-clips.mjs`,
 which remuxes/transcodes the raw phone exports in `Dance Moves/` (gitignored) to
 web-friendly H.264 + poster frames. A hand-picked still at `stills/Move_NN.png` (committed)
@@ -49,12 +55,20 @@ gallery.
   handles creation/revocation). Created by `ClipRecorder` (camera `MediaRecorder`, or file
   input). Camera capture needs a secure context (localhost or HTTPS).
 
+**Sessions** — `/sessions` records or uploads long freestyles; `/session/:id` marks a
+start/end and cuts it into a new move (`media.ts` `cutSegment`: replays the range through
+`video.captureStream()` + `MediaRecorder` in real time — Chrome only). The cut becomes the
+move's `mainClipId` and the frame picked in `StillPicker` its `still`. Sessions are purged
+7 days after recording (`purgeOldSessions` on launch) and are not in the backup.
+`StillPicker` is also the move page's "Choose thumbnail".
+
 **PWA / offline** — configured in `vite.config.ts` via `vite-plugin-pwa` (`generateSW`). The
 app shell is precached; `/clips/*.mp4` are deliberately excluded and instead runtime-cached
 (`CacheFirst`, cache name `clip-videos`), so a clip is available offline once it has been
 played.
 
-**Routing** — `HashRouter` with two routes: `/` (`Gallery`) and `/move/:id` (`MoveDetail`).
+**Routing** — `HashRouter`: `/` (`Gallery`), `/move/:id` (`MoveDetail`), `/battle`,
+`/sessions`, `/session/:id`.
 Hash routing is intentional so the app works when opened from `file://` or a static host
 without server rewrites.
 

@@ -1,10 +1,11 @@
 import Dexie, { type Table } from 'dexie';
 import { reportError } from './errors';
-import type { Clip, Move } from './types';
+import type { Clip, Move, Session } from './types';
 
 export class DanceMovesDB extends Dexie {
   moves!: Table<Move, string>;
   clips!: Table<Clip, string>;
+  sessions!: Table<Session, string>;
   meta!: Table<{ key: string; value: unknown }, string>;
 
   constructor() {
@@ -13,6 +14,9 @@ export class DanceMovesDB extends Dexie {
       moves: 'id, status, sortIndex, createdAt',
       clips: 'id, moveId, recordedAt',
       meta: 'key',
+    });
+    this.version(2).stores({
+      sessions: 'id, recordedAt',
     });
   }
 }

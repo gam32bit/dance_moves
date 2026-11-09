@@ -5,6 +5,9 @@ import { guard } from './errors';
 import Gallery from './components/Gallery';
 import MoveDetail from './components/MoveDetail';
 import BattleRound from './components/BattleRound';
+import Sessions from './components/Sessions';
+import SessionEditor from './components/SessionEditor';
+import { purgeOldSessions } from './hooks/useSessions';
 import ErrorToasts from './components/ErrorToasts';
 import type { Move } from './types';
 
@@ -30,6 +33,7 @@ export default function App() {
     void guard('Set up library', () => seedIfNeeded(BASE_URL)).finally(() =>
       setReady(true),
     );
+    void guard('Clear old sessions', () => purgeOldSessions());
   }, []);
 
   if (!ready) {
@@ -42,6 +46,8 @@ export default function App() {
         <Route path="/" element={<Gallery />} />
         <Route path="/move/:id" element={<MoveDetail />} />
         <Route path="/battle" element={<BattleRound />} />
+        <Route path="/sessions" element={<Sessions />} />
+        <Route path="/session/:id" element={<SessionEditor />} />
       </Routes>
       <ErrorToasts />
     </>

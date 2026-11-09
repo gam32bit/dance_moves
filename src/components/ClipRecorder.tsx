@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 
 /** Practice clips are short by design; this stops a forgotten recording. */
-const MAX_SECONDS = 90;
+const DEFAULT_MAX_SECONDS = 90;
+
+function formatElapsed(secs: number): string {
+  return secs < 60 ? `${secs}s` : `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
+}
 
 /**
  * Capture a video clip either by recording with the camera or picking a file.
@@ -10,9 +14,14 @@ const MAX_SECONDS = 90;
 export default function ClipRecorder({
   onCapture,
   saving = false,
+  maxSeconds = DEFAULT_MAX_SECONDS,
+  uploadOpensCamera = true,
 }: {
   onCapture: (blob: Blob, source: 'recorded' | 'uploaded') => void;
   saving?: boolean;
+  maxSeconds?: number;
+  /** Whether Upload jumps straight to the phone camera instead of the file picker. */
+  uploadOpensCamera?: boolean;
 }) {
   const [tab, setTab] = useState<'record' | 'upload'>('record');
   const [stream, setStream] = useState<MediaStream | null>(null);
@@ -54,9 +63,36 @@ export default function ClipRecorder({
     const t = setInterval(() => {
       const secs = Math.floor((Date.now() - started) / 1000);
       setElapsed(secs);
-      if (secs >= MAX_SECONDS) stop();
+      if (secs >= maxSeconds) stop();
     }, 250);
     return () => clearInterval(t);
+  }, [recording, maxSeconds]);
+
+  // The screen going to sleep stops the camera mid-recording. Best-effort.
+  useEffect(() => {
+    if (!recording) return;
+    let lock: WakeLockSentinel | null = null;
+    let released = false;
+    function acquire() {
+      void navigator.wakeLock
+        ?.request('screen')
+        .then((l) => {
+          if (released) void l.release().catch(() => {});
+          else lock = l;
+        })
+        .catch(() => {});
+    }
+    // The browser drops the lock whenever the page is hidden.
+    function onVisible() {
+      if (document.visibilityState === 'visible') acquire();
+    }
+    acquire();
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      released = true;
+      document.removeEventListener('visibilitychange', onVisible);
+      void lock?.release().catch(() => {});
+    };
   }, [recording]);
 
   function start() {
@@ -95,7 +131,7 @@ export default function ClipRecorder({
     stop();
   }
 
-  const remaining = MAX_SECONDS - elapsed;
+  const remaining = maxSeconds - elapsed;
 
   return (
     <div className="recorder">
@@ -114,7 +150,7 @@ export default function ClipRecorder({
           <video ref={videoRef} autoPlay muted playsInline className="recorder-preview" />
           {recording && (
             <p className="muted recorder-timer">
-              {elapsed}s {remaining <= 15 && `· stops in ${remaining}s`}
+              {formatElapsed(elapsed)} {remaining <= 15 && `· stops in ${remaining}s`}
             </p>
           )}
           {!recording ? (
@@ -140,7 +176,7 @@ export default function ClipRecorder({
           <input
             type="file"
             accept="video/*"
-            capture="environment"
+            capture={uploadOpensCamera ? 'environment' : undefined}
             hidden
             disabled={saving}
             onChange={(e) => {

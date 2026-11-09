@@ -50,7 +50,8 @@ export function reportError(context: string, err: unknown): void {
 
 /**
  * Run a write and surface any failure instead of dropping it.
- * Returns undefined when the operation failed.
+ * Returns undefined when the operation failed — so to tell success apart, the
+ * op has to resolve to something, e.g. `write().then(() => true)`.
  */
 export async function guard<T>(
   context: string,

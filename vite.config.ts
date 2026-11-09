@@ -47,13 +47,15 @@ export default defineConfig({
             options: {
               cacheName: 'clip-videos',
               cacheableResponse: { statuses: [200] },
-              expiration: { maxEntries: 40, maxAgeSeconds: 60 * 60 * 24 * 180 },
+              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 180 },
             },
           },
           {
             urlPattern: ({ url }) => url.pathname.includes('/clips/index.json'),
-            handler: 'StaleWhileRevalidate',
-            options: { cacheName: 'clip-index' },
+            // Network first, so new bundled clips show up on the first launch after
+            // a deploy rather than the second; the cache still covers offline.
+            handler: 'NetworkFirst',
+            options: { cacheName: 'clip-index', networkTimeoutSeconds: 3 },
           },
         ],
       },

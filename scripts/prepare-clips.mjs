@@ -3,6 +3,9 @@
 // public/clips/ and writes an index.json the app seeds itself from.
 // A hand-picked still at stills/Move_NN.png replaces the auto-extracted poster.
 //
+// Outputs that already exist are left alone, so adding new clips doesn't
+// rewrite (and re-commit) the old ones. Delete an output to regenerate it.
+//
 // Usage: node scripts/prepare-clips.mjs
 // Requires: ffmpeg + ffprobe on PATH.
 
@@ -38,8 +41,10 @@ async function toMp4(src, dest) {
     // Already browser-safe: just remux, no re-encode.
     args.push('-c:v', 'copy', '-c:a', 'aac', '-b:a', '128k');
   } else {
-    // e.g. HEVC from newer iPhones — re-encode to H.264.
-    args.push('-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23',
+    // e.g. HEVC from newer phones — re-encode to H.264, capped at 1280px on
+    // the long side to match the older clips and keep the deploy small.
+    args.push('-vf', "scale='min(1280,iw)':'min(1280,ih)':force_original_aspect_ratio=decrease:force_divisible_by=2",
+              '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23',
               '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '128k');
   }
   args.push(dest);
@@ -75,9 +80,11 @@ async function main() {
     // (CacheFirst) fetch the new one.
     const jpg = existsSync(still) ? `${base}-still.jpg` : `${base}.jpg`;
     process.stdout.write(`[${i + 1}/${files.length}] ${name} -> ${mp4} … `);
-    await toMp4(src, path.join(OUT_DIR, mp4));
+    if (!existsSync(path.join(OUT_DIR, mp4))) await toMp4(src, path.join(OUT_DIR, mp4));
     try {
-      if (existsSync(still)) await stillToJpg(still, path.join(OUT_DIR, jpg));
+      if (existsSync(path.join(OUT_DIR, jpg))) {
+        // already generated
+      } else if (existsSync(still)) await stillToJpg(still, path.join(OUT_DIR, jpg));
       else await poster(src, path.join(OUT_DIR, jpg));
     } catch {
       console.warn('(poster failed)');
