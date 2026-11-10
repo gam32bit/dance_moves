@@ -88,6 +88,7 @@ export default function Sessions() {
             saving={saving}
             maxSeconds={SESSION_MAX_SECONDS}
             uploadOpensCamera={false}
+            audio={false}
           />
         </Modal>
       )}

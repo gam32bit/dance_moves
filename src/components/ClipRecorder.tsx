@@ -16,12 +16,15 @@ export default function ClipRecorder({
   saving = false,
   maxSeconds = DEFAULT_MAX_SECONDS,
   uploadOpensCamera = true,
+  audio = true,
 }: {
   onCapture: (blob: Blob, source: 'recorded' | 'uploaded') => void;
   saving?: boolean;
   maxSeconds?: number;
   /** Whether Upload jumps straight to the phone camera instead of the file picker. */
   uploadOpensCamera?: boolean;
+  /** Taking the mic pauses music playing in other apps (e.g. SoundCloud). */
+  audio?: boolean;
 }) {
   const [tab, setTab] = useState<'record' | 'upload'>('record');
   const [stream, setStream] = useState<MediaStream | null>(null);
@@ -38,7 +41,7 @@ export default function ClipRecorder({
     let active = true;
     let acquired: MediaStream | null = null;
     navigator.mediaDevices
-      .getUserMedia({ video: { facingMode: 'user' }, audio: true })
+      .getUserMedia({ video: { facingMode: 'user' }, audio })
       .then((s) => {
         acquired = s;
         if (!active) {
@@ -54,7 +57,7 @@ export default function ClipRecorder({
       acquired?.getTracks().forEach((t) => t.stop());
       setStream(null);
     };
-  }, [tab]);
+  }, [tab, audio]);
 
   // Tick the elapsed counter and stop automatically at the cap.
   useEffect(() => {
